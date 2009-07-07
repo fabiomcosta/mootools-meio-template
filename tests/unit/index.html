@@ -1,0 +1,33 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
+	"http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+	<head>
+		<title>Plugin Specs</title>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+		
+		<link rel="stylesheet" type="text/css" media="screen" href="../../assets/js-spec/Specs.css" />
+		<link rel="stylesheet" type="text/css" media="screen" href="../../assets/mootools-meio-simpleconsole/meio.simpleconsole.css" />
+		<script type="text/javascript" src="../../assets/js-spec/JSSpec.js"></script>
+		<script type="text/javascript" src="../../assets/js-spec/DiffMatchPatch.js"></script>
+		<script type="text/javascript" src="../../assets/js-spec/Builder.js"></script>
+		
+		<script type="text/javascript" charset="utf-8">
+			Builder.build('../../', {
+				assets: {
+					'mootools': ['mootools-core'],
+					'mootools-meio-simpleconsole': ['meio.simpleconsole']
+				},
+				source: [
+					'moo.meio.template',
+				],
+				tests: {
+					unit: {
+						'meio': ['moo.meio.template']
+					}
+				}
+			});
+		</script>
+	</head>
+	<body>
+	</body>
+</html>
