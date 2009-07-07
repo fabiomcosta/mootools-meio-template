@@ -29,7 +29,7 @@ if(typeof Meio == 'undefined') var Meio = {};
 			this.template = template;
 		},
 		
-		matchWith: function(html, options){
+		matchWith: function(html, options){ 
 			var container = null;
 			if($type(html)=='element'){
 				container = $(html);
