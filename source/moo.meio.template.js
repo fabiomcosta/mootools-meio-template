@@ -12,7 +12,7 @@ if(typeof Meio == 'undefined') var Meio = {};
 			templateRegex: /\{([^{}]+)\}/g
 		},
 		
-		cleanupRegex: [
+		normalizeRegex: [
 			(/>\s+</g), '><', //removeSpaceBetweenTags
 			(/\s+(\\?>)/g), '$1', //removeSpaceInsideTags
 			(/(<\/?)(\w+)([>\s\/])/g), function(all, b1, match, b2){return b1+match.toLowerCase()+b2;}, //lowercases tags
@@ -23,35 +23,31 @@ if(typeof Meio == 'undefined') var Meio = {};
 			(/(<\w+\s\w+=)([^\s"'>]+)([^>]*\/?>)/g), function(all, b1, match, b2){return b1+'"'+match+'"'+b2;} 
 		],
 		
-		initialize: function(html, options){
+		initialize: function(template, options){
 			this.TEMPLATE_DEBUG_ID = 'meio-template-debug';
 			this.setOptions(options);
-			this.html = html;
+			this.template = template;
 		},
 		
-		cleanup: function(html, template){
-			var cRegex = this.cleanupRegex;
-			for(var i=0; i < cRegex.length; i+=2){
-				html = html.replace(cRegex[i], cRegex[i+1]);
-				template = template.replace(cRegex[i], cRegex[i+1]);
+		matchWith: function(html, options){
+			var container = null;
+			if($type(html)=='element'){
+				container = $(html);
+				html = container.get('html');
 			}
-			return [html, template];
-		},
-		
-		matchWith: function(template, options){
-			//  debug: false,
-			//	ignore: {
-			//		'*': {
-			//			'id': 'fabio'
-			//		}
-			//	}
-		
-			var self = this.html;
+			else{
+				container = new Element('div', {'html': html, styles: {'display': 'none'}});
+			}
+			// if its not in the document, insert it, i need it to use the selectors engine
+			if(container.ownerDocument !== document.body){
+				container.inject(document.body);
+			}
+
+			var template = this.template;
 			var keys = [];
 		
 			if(this.options.ignore){
 				var ignore = this.options.ignore;
-				var container = new Element('div', {'html': self, styles: {'display': 'none'}}).inject(document.body);
 				var currTag = null;
 				var currAttr = null;
 				var ignoreRegex = null;
@@ -88,42 +84,38 @@ if(typeof Meio == 'undefined') var Meio = {};
 					//template = template.replace(ignoreRegex, '$1');
 					//self = self.replace(ignoreRegex, '$1');
 				}
-				self = container.innerHTML;
+				html = container.innerHTML;
 				container.destroy();
 			}
 		
-			var ret = this.cleanup(self, template);
-			self = ret[0];
-			template = ret[1];
-		
+			var cRegex = this.normalizeRegex;
+			for(var i=0; i < cRegex.length; i+=2){
+				html = html.replace(cRegex[i], cRegex[i+1]);
+				template = template.replace(cRegex[i], cRegex[i+1]);
+			}
+			
 			var replaced = template.replace(this.options.templateRegex, function(total, key){
 				keys.push(key);
 				return '(.*)';
 			});
 		
-			var match = self.match(new RegExp(replaced));
+			var match = html.match(new RegExp(replaced));
 			
 			if(!match && this.options.debug){
-				this.debug(self, template);
+				this.debug(template, html);
 			}
 		
 			return (match)? match.slice(1).associate(keys): null;
 		},
 		
-		debug: function(html, template){
-			alert('Template:\n' + template + '\nCleaned string:\n' + html);
+		debug: function(template, html){
+			alert('If they don\'t match its because you are forgetting to ignore something.\nTemplate:\n' + template + '\nCleaned string:\n' + html);
 		}
 	});
 	
 	String.implement({
 		matchWith: function(template, options){
 			return new Meio.Template(this, options).matchWith(template, options);
-		}
-	});
-
-	Element.implement({
-		matchWith: function(template, options){
-			return this.get('html').matchWith(template, options);
 		}
 	});
 

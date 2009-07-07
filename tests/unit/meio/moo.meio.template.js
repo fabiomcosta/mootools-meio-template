@@ -1,22 +1,22 @@
 describe('Template tests', {
 
 	'Should return an object with the values marked on the template': function(){
-		var html = '<span>data-value</span><div>anothervalue</div>';
 		var template = '<span>{data}</span><div>{another_data}</div>';
-		value_of(html.matchWith(template)).should_be({'data': 'data-value', 'another_data': 'anothervalue'});
+		var html = '<span>data-value</span><div>anothervalue</div>';
+		value_of(template.matchWith(html)).should_be({'data': 'data-value', 'another_data': 'anothervalue'});
 	},
 	
 	'Should return an object with the values marked on the template with a little space of difference': function(){
-		var html = '<span>data-value</span> <div>anothervalue</div>';
 		var template = '<span>{data}</span><div>{another_data}</div>';
-		value_of(html.matchWith(template, {debug: true})).should_be({'data': 'data-value', 'another_data': 'anothervalue'});
+		var html = '<span>data-value</span> <div>anothervalue</div>';
+		value_of(template.matchWith(html, {debug: true})).should_be({'data': 'data-value', 'another_data': 'anothervalue'});
 	},
 	
 	'Should return an object with the values marked on the template2': function(){
 		var html = '<span title="title" anything="anything">data-value</span><div>anothervalue</div>';
 		var el = new Element('div', {'html': html});
 		var template = '<span title="{title}" anything="{any}">{data}</span>{no_info}<div>{another_data}</div>';
-		value_of(el.matchWith(template)).should_be({'title': 'title', 'any': 'anything', 'data': 'data-value', 'no_info': '', 'another_data': 'anothervalue'});
+		value_of(template.matchWith(el)).should_be({'title': 'title', 'any': 'anything', 'data': 'data-value', 'no_info': '', 'another_data': 'anothervalue'});
 	},
 	
 	'Should return an object with the values marked on the template, with diff attrs': function(){
@@ -25,7 +25,7 @@ describe('Template tests', {
 		var kid3 = new Element('input');
 		var el = new Element('div').adopt(kid1, kid2, kid3);
 		var template = '<span class="omclass">{data}</span><div>{another_data}</div><input>';
-		value_of(el.matchWith(template, {ignore: {'div': 'style'}})).should_be({'data': 'data-value', 'another_data': 'anothervalue'});
+		value_of(template.matchWith(el, {ignore: {'div': 'style'}})).should_be({'data': 'data-value', 'another_data': 'anothervalue'});
 	},
 	
 	'Should match ignoring whats passed': function(){
@@ -34,7 +34,7 @@ describe('Template tests', {
 			new Element('div', {'html': 'anothervalue', 'anothertest': 'saycheese', 'title': 'atitle', 'styles': {'text-align': 'right'}})
 		);
 		var template = '<span>{data}</span><div>{another_data}</div>';
-		value_of(el.matchWith(template, {debug: true, ignore: {'div': ['style', 'title', 'anothertest']}})).should_be({'data': 'data-value', 'another_data': 'anothervalue'});
+		value_of(template.matchWith(el, {debug: true, ignore: {'div': ['style', 'title', 'anothertest']}})).should_be({'data': 'data-value', 'another_data': 'anothervalue'});
 	},
 	
 	'Ignore with selector': function(){
@@ -43,7 +43,7 @@ describe('Template tests', {
 			new Element('div', {'id': 'div-to-ignore', 'html': 'anothervalue', 'styles': {'text-align': 'right'}})
 		);
 		var template = '<span>{data}</span><div>{another_data}</div>';
-		value_of(el.matchWith(template, {ignore: {'#div-to-ignore': ['style', 'id']}})).should_be({'data': 'data-value', 'another_data': 'anothervalue'});
+		value_of(template.matchWith(el, {ignore: {'#div-to-ignore': ['style', 'id']}})).should_be({'data': 'data-value', 'another_data': 'anothervalue'});
 	}
 
 });

@@ -1,15 +1,14 @@
 meioTemplate - a mootools plugin for use with templating and reverse templating.
 ================================================================================
 
-Created by Fabio M. Costa on 2009-06-04. Please report any bug at http://www.meiocodigo.com
-Copyright (c) 2009 Fabio M. Costa http://www.meiocodigo.com
-
 You can do things like getting information using a text and a template to match with it, for example:
 
-	var html = '<span>data-value</span><div>anothervalue</div>';
 	var template = '<span>{data}</span><div>{another_data}</div>';
-	html.matchWith(template); // this returns {'data': 'data-value', 'another_data': 'anothervalue'}
+	var html = '<span>data-value</span><div>anothervalue</div>';
+	template.matchWith(html); // this returns {'data': 'data-value', 'another_data': 'anothervalue'}
 	
+Created by Fabio M. Costa on 2009-06-04. Please report any bug at http://www.meiocodigo.com
+Copyright (c) 2009 Fabio M. Costa http://www.meiocodigo.com
 
 The MIT License (http://www.opensource.org/licenses/mit-license.php)
 
