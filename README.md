@@ -1,11 +1,33 @@
 meioTemplate - a mootools plugin for use with templating and reverse templating.
 ================================================================================
 
+It have been teste on IE, Firefox, Safari, Opera.
+
 You can do things like getting information using a text and a template to match with it, for example:
 
 	var template = '<span>{data}</span><div>{another_data}</div>';
 	var html = '<span>data-value</span><div>anothervalue</div>';
 	template.matchWith(html); // this returns {'data': 'data-value', 'another_data': 'anothervalue'}
+	
+You can use elements too and can ignore some parts of it, in a way that it will match with the template:
+
+	var template = '<div><span>{span-key}</span><div>{div-key}</div></div>';
+	var div = new Element('div', {'id': 'div-id', 'class': 'div-class'}).adopt(
+		new Element('span', {'html': 'span-value'}),
+		new Element('div', {'html': 'div-value'})
+	);
+	template.matchWith(div, {ignore: {'#div-id': '+'}}); // this returns {'span-key': 'span-value', 'div-key': 'div-value'}
+
+Using the '*' removes all the elements that match the selector, while the '+' removes all of the elements attributes:
+
+	var template = '<div><span>{span-key}</span><div>{div-key}</div></div>';
+	var div = new Element('div', {'id': 'div-id', 'class': 'div-class'}).adopt(
+		new Element('span', {'html': 'span-value'}),
+		new Element('div', {'html': 'div-value'}),
+		new Element('p', {'html': 'some value that will not interfere anyway'})
+	);
+	template.matchWith(div, {ignore: {'#div-id': '+', 'p': '*'}}); // this returns {'span-key': 'span-value', 'div-key': 'div-value'}
+
 	
 Created by Fabio M. Costa on 2009-06-04. Please report any bug at http://www.meiocodigo.com
 Copyright (c) 2009 Fabio M. Costa http://www.meiocodigo.com

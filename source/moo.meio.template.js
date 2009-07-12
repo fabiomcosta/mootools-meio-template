@@ -1,6 +1,7 @@
 if(typeof Meio == 'undefined') var Meio = {};
 
-(function($){
+(function(){
+	var $ = document.id || $;
 
 	Meio.Template = new Class({
 		
@@ -29,8 +30,9 @@ if(typeof Meio == 'undefined') var Meio = {};
 			this.template = template;
 		},
 		
-		matchWith: function(html, options){ 
-			var container = null;
+		matchWith: function(html){
+			var container = null,
+				injectedInDoc = false;
 			if($type(html)=='element'){
 				container = $(html);
 				html = container.get('html');
@@ -41,64 +43,33 @@ if(typeof Meio == 'undefined') var Meio = {};
 			// if its not in the document, insert it, i need it to use the selectors engine
 			if(container.ownerDocument !== document.body){
 				container.inject(document.body);
+				injectedInDoc = true;
 			}
-
-			var template = this.template;
-			var keys = [];
 		
-			if(this.options.ignore){
-				var ignore = this.options.ignore;
-				var currTag = null;
-				var currAttr = null;
-				var ignoreRegex = null;
-				//new RegExp('<\w+\s', 'g');
-				// tag level
-				for(selector in ignore){
-					//currTag = (tag=='*')? '\\w+': tag;
-					// attr level
-					currAttr = ignore[selector];
-					if($type(currAttr)=='object'){
-						for(attr in ignore[tag]){
-							currAttr = (attr=='*')? '\\w+': attr;
-							// value level
-							if($type(ignore[tag][attr])=='array'){
-								for(var i=0; i--;){
-
-								}
-							}
-							else if($type(ignore[tag][attr])=='string'){
-
-							}
-						}
-					}
-					else if($type(currAttr)=='string' || $type(currAttr)=='array'){
-						if($type(currAttr)=='string') currAttr = [currAttr];
-						var els = container.getElements(selector);
-						els.each(function(el){
-							currAttr.each(function(attr){
-								el.removeAttribute(attr);
-							});
-						});
-						//ignoreRegex = new RegExp('(<'+currTag+'[^>])*\\s+'+options[tag]+'="[^"]+"\\s*', 'g');
-					}
-					//template = template.replace(ignoreRegex, '$1');
-					//self = self.replace(ignoreRegex, '$1');
-				}
+			if($type(this.options.ignore)=='object'){
+				this.ignoreNodes(container);
 				html = container.innerHTML;
-				container.destroy();
+				// remove if it has been inject by the plugin
+				if(injectedInDoc){
+					container.dispose();
+				}
 			}
 		
-			var cRegex = this.normalizeRegex;
+			var template = this.template,
+				keys = [],
+				cRegex = this.normalizeRegex;
+			
+			// normalizes template and passed html
 			for(var i=0; i < cRegex.length; i+=2){
 				html = html.replace(cRegex[i], cRegex[i+1]);
 				template = template.replace(cRegex[i], cRegex[i+1]);
 			}
-			
+				
 			var replaced = template.replace(this.options.templateRegex, function(total, key){
 				keys.push(key);
 				return '(.*)';
 			});
-		
+			
 			var match = html.match(new RegExp(replaced));
 			
 			if(!match && this.options.debug){
@@ -108,15 +79,53 @@ if(typeof Meio == 'undefined') var Meio = {};
 			return (match)? match.slice(1).associate(keys): null;
 		},
 		
+		ignoreNodes: function(container){
+			var ignore = this.options.ignore,
+				currAttr = null;
+				
+			// tag level
+			for(selector in ignore){
+				// attr level
+				currAttr = ignore[selector];
+				if($type(currAttr)=='string'){
+					switch (currAttr){
+					case '*':
+						container.getElements(selector).dispose();
+						break;
+					case '+':
+						var els = container.getElements(selector);
+						for(var j=els.length; j--;){
+							for(var attr, i = els[j].attributes.length; i--;){
+								if((attr = els[j].attributes[i]) && attr.nodeValue && attr.specified && !attr.expando)
+									els[j].removeAttribute(attr.nodeName);
+							}
+						}
+						break;
+					default:
+						currAttr = [currAttr];
+					}
+				}
+				if($type(currAttr)=='array'){
+					var els = container.getElements(selector);
+					for(var j=els.length; j--;){
+						for(var i=currAttr.length; i--;){
+							els[j].removeAttribute(currAttr[i]);
+						}
+					}
+				}
+			}
+		},
+		
 		debug: function(template, html){
-			alert('If they don\'t match its because you are forgetting to ignore something.\nTemplate:\n' + template + '\nCleaned string:\n' + html);
+			var msg = 'If they don\'t match its because you are forgetting to ignore something.\nTemplate:\n' + template + '\nCleaned string:\n' + html;
+			(console && console.log)? console.log(msg): alert(msg);
 		}
 	});
 	
 	String.implement({
-		matchWith: function(template, options){
-			return new Meio.Template(this, options).matchWith(template, options);
+		matchWith: function(elOrHtml, options){
+			return new Meio.Template(this, options).matchWith(elOrHtml);
 		}
 	});
 
-})(document.id);
+})();
