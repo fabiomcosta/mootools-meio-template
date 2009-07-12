@@ -1,7 +1,7 @@
 /**
  * moo.meio.template.js
  * @author: fabiomcosta
- * @version 0.9
+ * @version 0.9b
  *
  * Created by Fabio M. Costa on 2008-09-16. Please report any bug at http://www.meiocodigo.com
  *
