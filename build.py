@@ -43,7 +43,7 @@ class Builder:
         print '** Succesfully created "' + file_name + '" file. **'
     
     def create_minified_file(self):
-        os.system('java -jar assets/yui-compressor/yui.jar --warn --charset utf8 ' + self.build_folder + self.file_name + self.extension + ' > '+ self.build_folder + self.file_name + '.' + self.minify_posfix + self.extension)
+        os.system('java -jar ../../assets/yui-compressor/yui.jar --warn --charset utf8 ' + self.build_folder + self.file_name + self.extension + ' > '+ self.build_folder + self.file_name + '.' + self.minify_posfix + self.extension)
         print '** Succesfully created minified file. **'
         
     def create_zip_file(self):
