@@ -1,5 +1,5 @@
 describe('Template tests', {
-/*
+
 	'Should return an object with the values marked on the template': function(){
 		var template = '<span>{data}</span><div>{another_data}</div>';
 		var html = '<span>data-value</span><div>anothervalue</div>';
@@ -107,7 +107,7 @@ describe('Template tests', {
 		);
 		value_of(template.matchWith(div, {ignore: {'#div-id': '+', 'p': '*'}})).should_be({'span-key': 'span-value', 'div-key': 'div-value'});
 	},
-*/
+
 	'example with event attribute': function(){
 		var template = '<span>{span-key}</span><div>{div-key}</div><div>{div2-key}</div>';
 		var div2 = new Element('div', {'id': 'div-id', 'class': 'div-class', 'data-ignored': 'value-ignored', html: 'div2-value'});
@@ -119,8 +119,8 @@ describe('Template tests', {
 			div2
 		);
 		value_of(template.matchWith(div, {debug: true, ignore: {'#div-id': '+', 'p': '*'}})).should_be({'span-key': 'span-value', 'div-key': 'div-value', 'div2-key': 'div2-value'});
-	}
-/*	
+	},
+
 	'example with table element': function(){
 		var template = '<tbody><tr><td>{td-key}</td></tr></tbody>';
 		var table = new Element('table').adopt(
@@ -131,7 +131,12 @@ describe('Template tests', {
 			)
 		);
 		value_of(template.matchWith(table, {debug: true})).should_be({'td-key': 'td-value'});
+	},
+	
+	'example with style attribute': function(){
+		var template = '<tbody><tr><td>{td-key}</td></tr></tbody>';
+		var table = '<tbody><tr><td style="color: red">td-value</td></tr></tbody>';
+		value_of(template.matchWith(table, {'debug': true, ignore: {'td': '+'}})).should_be({'td-key': 'td-value'});
 	}
-*/	
 	
 });

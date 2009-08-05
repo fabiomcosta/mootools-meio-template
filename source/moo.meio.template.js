@@ -40,13 +40,13 @@ if(typeof Meio == 'undefined') var Meio = {};
 		var node = document.createElement('div');
 		node.className = 'something';
 		node.removeAttribute('class');
-		return node.className==='something';
+		return node.className === 'something';
 	})();
 	
 	var specialProperties = {
 		'class': 'className',
-		'for': 'htmlFor',
-		'style': 'cssText'
+		'for': 'htmlFor'
+		//'style': 'cssText'
 	};
 	
 	Meio.Template = new Class({
@@ -77,16 +77,46 @@ if(typeof Meio == 'undefined') var Meio = {};
 		
 		matchWith: function(html){
 			
-			var injectedInDoc = false;
-				container = ($type(html)==='element')? html: new Element('div', {html: html, styles: {'display': 'none'}});
-				
+			var injectedInDoc = false,
+				container = null;
+			
+			if($type(html) === 'element'){
+				container = $(html);
+			}
+			else{
+				//get first tag element
+				var match = html.match(/<\/?([^\W\s>]+)/i);
+				container = new Element('div', {styles: {'display': 'none'}});
+				if(match && match[1]){
+					var firstTag = match[1].toLowerCase();
+					var translations = {
+						tbody: [1, '<table>', '</table>'],
+						tr: [2, '<table><tbody>', '</tbody></table>'],
+						td: [3, '<table><tbody><tr>', '</tr></tbody></table>'],
+						option: [1, '<select>', '</select>']
+					};
+					translations.th = translations.td;
+					translations.optgroup = translations.option;
+					translations.thead = translations.tfoot = translations.tbody;
+
+					if(translations[firstTag]){
+						html = translations[firstTag][1] + html + translations[firstTag][2];
+						container.innerHTML = html;
+						for(var i = translations[firstTag][0]; i--;) container = container.firstChild;
+					}
+					else{
+						container.innerHTML = html;
+					}
+				}
+			}
+			
 			// if its not in the document, insert it, i need it to use the selectors engine
 			if(container.ownerDocument !== document.body){
 				container.inject(document.body);
 				injectedInDoc = true;
 			}
 			
-			if($type(this.options.ignore)=='object'){
+			if($type(this.options.ignore) === 'object'){
 				this.ignoreNodes(container);
 				html = container.innerHTML;
 				// remove if it has been inject by the plugin
