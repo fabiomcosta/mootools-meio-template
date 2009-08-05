@@ -35,7 +35,20 @@ if(typeof Meio == 'undefined') var Meio = {};
 
 (function(){
 	var $ = document.id || $;
-
+	
+	var removesProperties = (function(){
+		var node = document.createElement('div');
+		node.className = 'something';
+		node.removeAttribute('class');
+		return node.className==='something';
+	})();
+	
+	var specialProperties = {
+		'class': 'className',
+		'for': 'htmlFor',
+		'style': 'cssText'
+	};
+	
 	Meio.Template = new Class({
 		
 		Implements: Options,
@@ -58,27 +71,21 @@ if(typeof Meio == 'undefined') var Meio = {};
 		],
 		
 		initialize: function(template, options){
-			this.TEMPLATE_DEBUG_ID = 'meio-template-debug';
 			this.setOptions(options);
 			this.template = template;
 		},
 		
 		matchWith: function(html){
-			var container = null,
-				injectedInDoc = false;
-			if($type(html)=='element'){
-				container = $(html);
-				html = container.get('html');
-			}
-			else{
-				container = new Element('div', {'html': html, styles: {'display': 'none'}});
-			}
+			
+			var injectedInDoc = false;
+				container = ($type(html)==='element')? html: new Element('div', {html: html, styles: {'display': 'none'}});
+				
 			// if its not in the document, insert it, i need it to use the selectors engine
 			if(container.ownerDocument !== document.body){
 				container.inject(document.body);
 				injectedInDoc = true;
 			}
-		
+			
 			if($type(this.options.ignore)=='object'){
 				this.ignoreNodes(container);
 				html = container.innerHTML;
@@ -87,7 +94,7 @@ if(typeof Meio == 'undefined') var Meio = {};
 					container.dispose();
 				}
 			}
-		
+			
 			var template = this.template,
 				keys = [],
 				cRegex = this.normalizeRegex;
@@ -105,10 +112,11 @@ if(typeof Meio == 'undefined') var Meio = {};
 			
 			var match = html.match(new RegExp(replaced));
 			
+			// if theres an error on the match
 			if(!match && this.options.debug){
 				this.debug(template, html);
 			}
-		
+			
 			return (match)? match.slice(1).associate(keys): null;
 		},
 		
@@ -127,10 +135,14 @@ if(typeof Meio == 'undefined') var Meio = {};
 						break;
 					case '+':
 						var els = container.getElements(selector);
+						// remove all attributes from this node
 						for(var j=els.length; j--;){
 							for(var attr, i = els[j].attributes.length; i--;){
-								if((attr = els[j].attributes[i]) && attr.nodeValue && attr.specified && !attr.expando)
-									els[j].removeAttribute(attr.nodeName);
+								if((attr = els[j].attributes[i]) && attr.nodeValue && attr.specified){
+									var nodeName = attr.nodeName;
+									if(removesProperties && specialProperties[nodeName]) nodeName = specialProperties[nodeName];
+									els[j].removeAttribute(nodeName);
+								}
 							}
 						}
 						break;
@@ -150,7 +162,8 @@ if(typeof Meio == 'undefined') var Meio = {};
 		},
 		
 		debug: function(template, html){
-			var msg = 'If they don\'t match its because you are forgetting to ignore something.\nTemplate:\n' + template + '\nCleaned string:\n' + html;
+			//throw new error();
+			var msg = 'If they don\'t match its because you are forgetting to ignore something. Template:' + template + ' Cleaned string: ' + html;
 			(console && console.log)? console.log(msg): alert(msg);
 		}
 	});

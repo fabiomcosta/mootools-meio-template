@@ -1,5 +1,5 @@
 describe('Template tests', {
-
+/*
 	'Should return an object with the values marked on the template': function(){
 		var template = '<span>{data}</span><div>{another_data}</div>';
 		var html = '<span>data-value</span><div>anothervalue</div>';
@@ -9,7 +9,7 @@ describe('Template tests', {
 	'Should return an object with the values marked on the template with a little space of difference': function(){
 		var template = '<span>{data}</span><div>{another_data}</div>';
 		var html = '<span>data-value</span> <div>anothervalue</div>';
-		value_of(template.matchWith(html, {debug: true})).should_be({'data': 'data-value', 'another_data': 'anothervalue'});
+		value_of(template.matchWith(html)).should_be({'data': 'data-value', 'another_data': 'anothervalue'});
 	},
 	
 	'Should return an object with the values marked on the template2': function(){
@@ -40,7 +40,7 @@ describe('Template tests', {
 			new Element('div', {'html': 'anothervalue', 'anothertest': 'saycheese', 'title': 'atitle', 'styles': {'text-align': 'right'}})
 		);
 		var template = '<span>{data}</span><div>{another_data}</div>';
-		value_of(template.matchWith(el, {debug: true, ignore: {'div': ['style', 'title', 'anothertest']}})).should_be({'data': 'data-value', 'another_data': 'anothervalue'});
+		value_of(template.matchWith(el, {ignore: {'div': ['style', 'title', 'anothertest']}})).should_be({'data': 'data-value', 'another_data': 'anothervalue'});
 	},
 	
 	'Ignore with selector': function(){
@@ -99,12 +99,39 @@ describe('Template tests', {
 	},
 	
 	'other example from README.md file': function(){
-		var template = '<div><span>{span-key}</span><div>{div-key}</div></div>';
+		var template = '<span>{span-key}</span><div>{div-key}</div>';
 		var div = new Element('div', {'id': 'div-id', 'class': 'div-class'}).adopt(
 			new Element('span', {'html': 'span-value'}),
 			new Element('div', {'html': 'div-value'}),
 			new Element('p', {'html': 'some value that will not interfere anyway'})
 		);
-		value_of( template.matchWith(div, {ignore: {'#div-id': '+', 'p': '*'}}), {'span-key': 'span-value', 'div-key': 'div-value'});
+		value_of(template.matchWith(div, {ignore: {'#div-id': '+', 'p': '*'}})).should_be({'span-key': 'span-value', 'div-key': 'div-value'});
+	},
+*/
+	'example with event attribute': function(){
+		var template = '<span>{span-key}</span><div>{div-key}</div><div>{div2-key}</div>';
+		var div2 = new Element('div', {'id': 'div-id', 'class': 'div-class', 'data-ignored': 'value-ignored', html: 'div2-value'});
+		div2.onclick = function(){ return false; };
+		var div = new Element('div').adopt(
+			new Element('span', {'html': 'span-value'}),
+			new Element('div', {'html': 'div-value'}),
+			new Element('p', {'html': 'some value that will not interfere anyway'}),
+			div2
+		);
+		value_of(template.matchWith(div, {debug: true, ignore: {'#div-id': '+', 'p': '*'}})).should_be({'span-key': 'span-value', 'div-key': 'div-value', 'div2-key': 'div2-value'});
 	}
+/*	
+	'example with table element': function(){
+		var template = '<tbody><tr><td>{td-key}</td></tr></tbody>';
+		var table = new Element('table').adopt(
+			new Element('tbody').adopt(
+				new Element('tr').adopt(
+					new Element('td', {'html': 'td-value'})
+				)
+			)
+		);
+		value_of(template.matchWith(table, {debug: true})).should_be({'td-key': 'td-value'});
+	}
+*/	
+	
 });
