@@ -107,13 +107,9 @@ if(typeof Meio == 'undefined') var Meio = {};
 					container.setStyle('display', 'none').inject(document.body);
 					injectedInDoc = true;
 				}
-				
 				this.ignoreNodes(container);
 				html = container.innerHTML;
-				
-				if(injectedInDoc){
-					container.destroy();
-				}
+				if(injectedInDoc) container.destroy();
 			}
 
 			var template = this.template,
@@ -125,7 +121,6 @@ if(typeof Meio == 'undefined') var Meio = {};
 				html = html.replace(cRegex[i], cRegex[i+1]);
 				template = template.replace(cRegex[i], cRegex[i+1]);
 			}
-			
 			var replaced = template.replace(this.options.templateRegex, function(total, key){
 				keys.push(key);
 				return '(.*)';
