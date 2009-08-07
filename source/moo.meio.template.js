@@ -1,7 +1,7 @@
 /**
  * moo.meio.template.js
  * @author: fabiomcosta
- * @version 0.9b
+ * @version 0.9
  *
  * Created by Fabio M. Costa on 2008-09-16. Please report any bug at http://www.meiocodigo.com
  *
@@ -36,6 +36,8 @@ if(typeof Meio == 'undefined') var Meio = {};
 (function(){
 	var $ = document.id || $;
 	
+	// it means that to remove the class atribute you wold have to use className instead
+	// htmlFor instead of for, etc...
 	var removesProperties = (function(){
 		var node = document.createElement('div');
 		node.className = 'something';
@@ -46,8 +48,20 @@ if(typeof Meio == 'undefined') var Meio = {};
 	var specialProperties = {
 		'class': 'className',
 		'for': 'htmlFor'
-		//'style': 'cssText'
 	};
+	
+	// used on getCorrectInnerHtmlStructure function
+	var translations = {
+		option: [1, '<select>', '</select>'],
+		tbody: [1, '<table>', '</table>'],
+		tr: [2, '<table><tbody>', '</tbody></table>'],
+		td: [3, '<table><tbody><tr>', '</tr></tbody></table>']
+	};
+	translations.th = translations.td;
+	translations.optgroup = translations.option;
+	translations.thead = translations.tfoot = translations.tbody;
+	
+	var elementPrototypeWithUID = $extend({'uid': null}, Element.Prototype);
 	
 	Meio.Template = new Class({
 		
@@ -60,19 +74,23 @@ if(typeof Meio == 'undefined') var Meio = {};
 		},
 		
 		normalizeRegex: [
-			(/>\s+</g), '><', //removeSpaceBetweenTags
-			(/\s+(\\?>)/g), '$1', //removeSpaceInsideTags
-			(/(<\/?)(\w+)([>\s\/])/g), function(all, b1, match, b2){return b1+match.toLowerCase()+b2;}, //lowercases tags
+			(/>\s+</g), '><', // remove spaces between tags
+			(/(<\/?)(\w+)([>\s\/])/g), function(all, b1, match, b2){return b1 + match.toLowerCase() + b2;}, // lowercases tags
+			// removes empty attributes
+			(/\s[\w-]+=["']{2}(?=[^<>]*>)/g), '',
+			// removes non attribute strings
+			(/\s[^=\W\s>]+(?=[\s>])(?=[^<>]*>)/g), '',
 			// adds "" to attrs that dont have
 			// thats a IE behavior with attributes that values dont have spaces
 			// ex: title=something -> title="something"
 			// title="something with space"
-			(/(<\w+\s\w+=)([^\s"'>]+)([^>]*\/?>)/g), function(all, b1, match, b2){return b1+'"'+match+'"'+b2;} 
+			(/(\s[\w-]+=)([^\s"][^\s>]+[^\s"])(?=[^<>]*>)/g), '$1"$2"',
+			(/\s+(\\?>)/g), '$1' // remove spaces inside tags
 		],
 		
 		initialize: function(template, options){
 			this.setOptions(options);
-			this.template = template;
+			this.template = ($type(template) === 'element')? template.get('html'): template;
 		},
 		
 		matchWith: function(html){
@@ -80,51 +98,24 @@ if(typeof Meio == 'undefined') var Meio = {};
 			var injectedInDoc = false,
 				container = null;
 			
-			if($type(html) === 'element'){
-				container = $(html);
-			}
-			else{
-				//get first tag element
-				var match = html.match(/<\/?([^\W\s>]+)/i);
-				container = new Element('div', {styles: {'display': 'none'}});
-				if(match && match[1]){
-					var firstTag = match[1].toLowerCase();
-					var translations = {
-						tbody: [1, '<table>', '</table>'],
-						tr: [2, '<table><tbody>', '</tbody></table>'],
-						td: [3, '<table><tbody><tr>', '</tr></tbody></table>'],
-						option: [1, '<select>', '</select>']
-					};
-					translations.th = translations.td;
-					translations.optgroup = translations.option;
-					translations.thead = translations.tfoot = translations.tbody;
-
-					if(translations[firstTag]){
-						html = translations[firstTag][1] + html + translations[firstTag][2];
-						container.innerHTML = html;
-						for(var i = translations[firstTag][0]; i--;) container = container.firstChild;
-					}
-					else{
-						container.innerHTML = html;
-					}
-				}
-			}
-			
-			// if its not in the document, insert it, i need it to use the selectors engine
-			if(container.ownerDocument !== document.body){
-				container.inject(document.body);
-				injectedInDoc = true;
-			}
-			
 			if($type(this.options.ignore) === 'object'){
+				// creating a container so we can use selector engine on the elements
+				// to ignore the ones specified by the ignore option
+				container = ($type(html) === 'element')? $(html): this.getCorrectInnerHtmlStructure(html);
+				
+				if(!container.getParent('body')){
+					container.setStyle('display', 'none').inject(document.body);
+					injectedInDoc = true;
+				}
+				
 				this.ignoreNodes(container);
 				html = container.innerHTML;
-				// remove if it has been inject by the plugin
+				
 				if(injectedInDoc){
-					container.dispose();
+					container.destroy();
 				}
 			}
-			
+
 			var template = this.template,
 				keys = [],
 				cRegex = this.normalizeRegex;
@@ -134,7 +125,7 @@ if(typeof Meio == 'undefined') var Meio = {};
 				html = html.replace(cRegex[i], cRegex[i+1]);
 				template = template.replace(cRegex[i], cRegex[i+1]);
 			}
-				
+			
 			var replaced = template.replace(this.options.templateRegex, function(total, key){
 				keys.push(key);
 				return '(.*)';
@@ -150,55 +141,79 @@ if(typeof Meio == 'undefined') var Meio = {};
 			return (match)? match.slice(1).associate(keys): null;
 		},
 		
+		getCorrectInnerHtmlStructure: function(html){
+			var match = html.match(/<\/?([^\W\s>]+)/i),
+				firstTag = match[1].toLowerCase(),
+				container = new Element('div', {styles: {'display': 'none'}});
+			
+			if(translations[firstTag]){
+				html = translations[firstTag][1] + html + translations[firstTag][2];
+				container.innerHTML = html;
+				for(var i = translations[firstTag][0]; i--;) container = container.firstChild;
+				return $(container);
+			}
+			else{
+				container.innerHTML = html;
+				return container;
+			}
+		},
+		
 		ignoreNodes: function(container){
 			var ignore = this.options.ignore,
-				currAttr = null;
+				attrs, els;
 				
 			// tag level
-			for(selector in ignore){
+			for (selector in ignore){
 				// attr level
-				currAttr = ignore[selector];
-				if($type(currAttr)=='string'){
-					switch (currAttr){
+				attrs = ignore[selector];
+				if ($type(attrs)=='string'){
+					switch (attrs){
 					case '*':
 						container.getElements(selector).dispose();
 						break;
 					case '+':
-						var els = container.getElements(selector);
-						// remove all attributes from this node
-						for(var j=els.length; j--;){
-							for(var attr, i = els[j].attributes.length; i--;){
-								if((attr = els[j].attributes[i]) && attr.nodeValue && attr.specified){
-									var nodeName = attr.nodeName;
-									if(removesProperties && specialProperties[nodeName]) nodeName = specialProperties[nodeName];
-									els[j].removeAttribute(nodeName);
-								}
-							}
-						}
+						els = container.getElements(selector);
+						this.removeAttributes(els);
 						break;
 					default:
-						currAttr = [currAttr];
+						attrs = [attrs];
 					}
 				}
-				if($type(currAttr)=='array'){
-					var els = container.getElements(selector);
-					for(var j=els.length; j--;){
-						for(var i=currAttr.length; i--;){
-							els[j].removeAttribute(currAttr[i]);
-						}
+				if($type(attrs)=='array'){
+					els = container.getElements(selector);
+					this.removeAttributes(els, attrs);
+				}
+			}
+		},
+		
+		// removes all the attrs from els
+		// attrs can be a list of strings representing the attributes or can be a list of attribute nodes
+		// checkfirst is an optimization for ie, it should be used while passind a list of all the attributes from els
+		removeAttributes: function(els, attrs){
+			var attr;
+			for (var j=els.length; j--;){
+				attrs = attrs || els[j].attributes;
+				for (var i=attrs.length; i--;){
+					attr = attrs[i];
+					if (attr.nodeName && (attr = attr.nodeName) && attr.specified && !elementPrototypeWithUID[attr]) break;
+					if(attr == 'style'){
+						els[j].style.cssText = '';
+					}
+					else{
+						if (removesProperties && specialProperties[attr]) attr = specialProperties[attr];
+						els[j].removeAttribute(attr);
 					}
 				}
 			}
 		},
 		
 		debug: function(template, html){
-			//throw new error();
 			var msg = 'If they don\'t match its because you are forgetting to ignore something. Template:' + template + ' Cleaned string: ' + html;
 			(console && console.log)? console.log(msg): alert(msg);
 		}
 	});
 	
-	String.implement({
+	Native.implement([String, Element], {
 		matchWith: function(elOrHtml, options){
 			return new Meio.Template(this, options).matchWith(elOrHtml);
 		}
