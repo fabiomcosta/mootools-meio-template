@@ -1,7 +1,7 @@
 /**
  * moo.meio.template.js
  * @author: fabiomcosta
- * @version 0.9b
+ * @version 0.9
  *
  * Created by Fabio M. Costa on 2008-09-16. Please report any bug at http://www.meiocodigo.com
  *
@@ -107,13 +107,9 @@ if(typeof Meio == 'undefined') var Meio = {};
 					container.setStyle('display', 'none').inject(document.body);
 					injectedInDoc = true;
 				}
-				
 				this.ignoreNodes(container);
 				html = container.innerHTML;
-				
-				if(injectedInDoc){
-					container.destroy();
-				}
+				if(injectedInDoc) container.destroy();
 			}
 
 			var template = this.template,
@@ -125,7 +121,6 @@ if(typeof Meio == 'undefined') var Meio = {};
 				html = html.replace(cRegex[i], cRegex[i+1]);
 				template = template.replace(cRegex[i], cRegex[i+1]);
 			}
-			
 			var replaced = template.replace(this.options.templateRegex, function(total, key){
 				keys.push(key);
 				return '(.*)';
@@ -214,7 +209,7 @@ if(typeof Meio == 'undefined') var Meio = {};
 	});
 	
 	Native.implement([String, Element], {
-		matchWith: function(elOrHtml, options){
+		intersect: function(elOrHtml, options){
 			return new Meio.Template(this, options).matchWith(elOrHtml);
 		}
 	});

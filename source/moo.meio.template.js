@@ -209,7 +209,7 @@ if(typeof Meio == 'undefined') var Meio = {};
 	});
 	
 	Native.implement([String, Element], {
-		matchWith: function(elOrHtml, options){
+		intersect: function(elOrHtml, options){
 			return new Meio.Template(this, options).matchWith(elOrHtml);
 		}
 	});

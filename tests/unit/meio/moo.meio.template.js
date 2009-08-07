@@ -2,7 +2,7 @@ describe('Template tests', {
 	'Should return an object with the values marked on the template': function(){
 		var template = '<span>{data}</span><div>{another_data}</div>';
 		var html = '<span>data-value</span><div>anothervalue</div>';
-		value_of(template.matchWith(html)).should_be({'data': 'data-value', 'another_data': 'anothervalue'});
+		value_of(template.intersect(html)).should_be({'data': 'data-value', 'another_data': 'anothervalue'});
 	}
 });
 
@@ -10,7 +10,7 @@ describe('Template tests2', {
 	'Should return an object with the values marked on the template with a little space of difference': function(){
 		var template = '<span>{data}</span><div>{another_data}</div>';
 		var html = '<span>data-value</span> <div>anothervalue</div>';
-		value_of(template.matchWith(html)).should_be({'data': 'data-value', 'another_data': 'anothervalue'});
+		value_of(template.intersect(html)).should_be({'data': 'data-value', 'another_data': 'anothervalue'});
 	}
 });
 
@@ -19,7 +19,7 @@ describe('Template tests3', {
 		var html = '<span title="title" anything="anything">data-value</span><div>anothervalue</div>';
 		var el = new Element('div', {'html': html});
 		var template = '<span title="{title}" anything="{any}">{data}</span>{no_info}<div>{another_data}</div>';
-		value_of(template.matchWith(el)).should_be({
+		value_of(template.intersect(el)).should_be({
 			'title': 'title',
 			'any': 'anything',
 			'data': 'data-value',
@@ -36,7 +36,7 @@ describe('Template tests4', {
 		var kid3 = new Element('input');
 		var el = new Element('div').adopt(kid1, kid2, kid3);
 		var template = '<span class="omclass">{data}</span><div>{another_data}</div><input>';
-		value_of(template.matchWith(el, {ignore: {'div': 'style'}})).should_be({'data': 'data-value', 'another_data': 'anothervalue'});
+		value_of(template.intersect(el, {ignore: {'div': 'style'}})).should_be({'data': 'data-value', 'another_data': 'anothervalue'});
 	}
 });
 
@@ -47,7 +47,7 @@ describe('Template tests5', {
 			new Element('div', {'html': 'anothervalue', 'anothertest': 'saycheese', 'title': 'atitle', 'styles': {'text-align': 'right'}})
 		);
 		var template = '<span>{data}</span><div>{another_data}</div>';
-		value_of(template.matchWith(el, {ignore: {'div': ['style', 'title', 'anothertest']}})).should_be({'data': 'data-value', 'another_data': 'anothervalue'});
+		value_of(template.intersect(el, {ignore: {'div': ['style', 'title', 'anothertest']}})).should_be({'data': 'data-value', 'another_data': 'anothervalue'});
 	}
 });
 
@@ -59,7 +59,7 @@ describe('Template tests6', {
 			new Element('div', {'id': 'div-to-ignore', 'html': 'anothervalue', 'styles': {'text-align': 'right'}})
 		);
 		var template = '<span>{data}</span><div>{another_data}</div>';
-		value_of(template.matchWith(el, {ignore: {'#div-to-ignore': ['style', 'id']}})).should_be({'data': 'data-value', 'another_data': 'anothervalue'});
+		value_of(template.intersect(el, {ignore: {'#div-to-ignore': ['style', 'id']}})).should_be({'data': 'data-value', 'another_data': 'anothervalue'});
 	}
 });
 
@@ -71,7 +71,7 @@ describe('Template tests7', {
 			new Element('div', {'id': 'div-to-ignore2'})
 		);
 		var template = '<span>{data}</span><div>{another_data}</div>';
-		value_of(template.matchWith(el, {
+		value_of(template.intersect(el, {
 			ignore: {
 				'#div-to-ignore': ['style', 'id'],
 				'#div-to-ignore2': '*'
@@ -91,7 +91,7 @@ describe('Template tests8', {
 			new Element('div', {'id': 'div-to-ignore2', 'title': 'value_title'})
 		);
 		var template = '<span>{data}</span><div>{another_data}</div><div>{div-value}</div>';
-		value_of(template.matchWith(el, {
+		value_of(template.intersect(el, {
 			ignore: {
 				'#div-to-ignore': ['style', 'id'],
 				'#div-to-ignore2': '+'
@@ -111,7 +111,7 @@ describe('Template tests9', {
 			new Element('span', {'html': 'span-value'}),
 			new Element('div', {'html': 'div-value'})
 		);
-		value_of( template.matchWith(div, {ignore: {'#div-id': '+'}}), {'span-key': 'span-value', 'div-key': 'div-value'});
+		value_of( template.intersect(div, {ignore: {'#div-id': '+'}}), {'span-key': 'span-value', 'div-key': 'div-value'});
 	}
 });
 
@@ -123,7 +123,7 @@ describe('Template tests10', {
 			new Element('div', {'html': 'div-value'}),
 			new Element('p', {'html': 'some value that will not interfere anyway'})
 		);
-		value_of(template.matchWith(div, {ignore: {'#div-id': '+', 'p': '*'}})).should_be({'span-key': 'span-value', 'div-key': 'div-value'});
+		value_of(template.intersect(div, {ignore: {'#div-id': '+', 'p': '*'}})).should_be({'span-key': 'span-value', 'div-key': 'div-value'});
 	}
 });
 
@@ -138,7 +138,7 @@ describe('Template tests11', {
 			new Element('p', {'html': 'some value that will not interfere anyway'}),
 			div2
 		);
-		value_of(template.matchWith(div, {debug: true, ignore: {'#div-id': '+', 'p': '*'}})).should_be({'span-key': 'span-value', 'div-key': 'div-value', 'div2-key': 'div2-value'});
+		value_of(template.intersect(div, {debug: true, ignore: {'#div-id': '+', 'p': '*'}})).should_be({'span-key': 'span-value', 'div-key': 'div-value', 'div2-key': 'div2-value'});
 	}
 });
 
@@ -152,7 +152,7 @@ describe('Template tests12', {
 				)
 			)
 		);
-		value_of(template.matchWith(table, {debug: true})).should_be({'td-key': 'td-value'});
+		value_of(template.intersect(table, {debug: true})).should_be({'td-key': 'td-value'});
 	}
 });
 
@@ -160,7 +160,7 @@ describe('Template tests13', {
 	'example with style and onclick attributes passing a string as parameter': function(){
 		var template = '<tbody><tr><td>{td-key}</td></tr></tbody>';
 		var table = '<tbody><tr><td style="color: red" onclick="return false;">td-value</td></tr></tbody>';
-		value_of(template.matchWith(table, {debug: true, ignore: {'td': '+'}})).should_be({'td-key': 'td-value'});
+		value_of(template.intersect(table, {debug: true, ignore: {'td': '+'}})).should_be({'td-key': 'td-value'});
 	}
 });
 
@@ -172,7 +172,7 @@ describe('Template tests14', {
 			new Element('option', {html: 'label2',value: 'value2'}),
 			new Element('option', {html: 'label3',value: 'value3'})
 		);
-		value_of(template.matchWith(select, {debug: true})).should_be({
+		value_of(template.intersect(select, {debug: true})).should_be({
 			'option1-value': 'value1',
 			'option2-value': 'value2',
 			'option3-value': 'value3',
@@ -187,7 +187,7 @@ describe('Template tests15', {
 	'example with option elements and boolean attributes': function(){
 		var template = '<option value="{option1-value}" title="{option1-title}">{option1-label}</option>';
 		var options = '<option selected="selected" value="value1" title="title1">label1</option>';
-		value_of(template.matchWith(options, {debug: true, ignore: {'option': 'selected'}})).should_be({
+		value_of(template.intersect(options, {debug: true, ignore: {'option': 'selected'}})).should_be({
 			'option1-value': 'value1',
 			'option1-label': 'label1',
 			'option1-title': 'title1'
