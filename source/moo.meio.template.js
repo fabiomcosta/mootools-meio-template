@@ -35,23 +35,38 @@ if(typeof Meio == 'undefined') var Meio = {};
 
 (function(){
 	var $ = document.id || $;
-	
-	// it means that to remove the class atribute you wold have to use className instead
-	// htmlFor instead of for, etc...
-	var removesProperties = (function(){
-		var node = document.createElement('div');
-		node.className = 'something';
-		node.removeAttribute('class');
-		return node.className === 'something';
-	})();
-	
-	var specialProperties = {
+
+	var support = {};
+    
+    (function(){
+        var testNode = document.createElement('div');
+		
+        // it means that to remove the class attribute you wold have to use className instead of class
+    	// htmlFor instead of for, etc...
+        testNode.className = 'something';
+		testNode.removeAttribute('class');
+        support.removesProperties = (testNode.className === 'something');
+        
+        // browsers like opera and ie gives uppercased tags on innerHTML property
+        testNode.innerHTML = '<a title=something></a>';
+        support.innerHtmlReturnsUpperCasedTags = testNode.innerHTML.contains('<A');
+        
+    	// thats a IE behavior with attributes that values dont have spaces
+    	// while other browser quotes the attribute value, ie doenst
+        support.innerHtmlReturnsUnquotedAttrs = testNode.innerHTML.contains('title=something');
+        
+        testNode = null;
+    })();
+
+    var specialProperties = {
 		'class': 'className',
 		'for': 'htmlFor'
 	};
+	var elementPrototypeWithUID = $extend({'uid': null}, Element.Prototype);
+	
 	
 	// used on getCorrectInnerHtmlStructure function
-	var translations = {
+    var translations = {
 		option: [1, '<select>', '</select>'],
 		tbody: [1, '<table>', '</table>'],
 		tr: [2, '<table><tbody>', '</tbody></table>'],
@@ -61,7 +76,27 @@ if(typeof Meio == 'undefined') var Meio = {};
 	translations.optgroup = translations.option;
 	translations.thead = translations.tfoot = translations.tbody;
 	
-	var elementPrototypeWithUID = $extend({'uid': null}, Element.Prototype);
+	
+	// start building the normalizerRegex array
+	var normalizerRegex = [
+		(/>\s+</g), '><', // remove spaces between tags
+		// removes empty attributes
+		(/\s[\w-]+=["']{2}(?=[^<>]*>)/g), ''
+	];
+	
+	// This regex will lowercase the tags
+	if(support.innerHtmlReturnsUpperCasedTags)
+	    normalizerRegex.push((/(<\/?)(\w+)([>\s\/])/g), function(all, b1, tag, b2){ return b1 + tag.toLowerCase() + b2; });
+	
+    // adds "" to attrs that dont have
+	// ex: title=something -> title="something"
+	if(support.innerHtmlReturnsUnquotedAttrs)
+	    normalizerRegex.push((/(\s[\w-]+=)([^\s"][^\s>]+[^\s"])(?=[^<>]*>)/g), '$1"$2"');
+	
+	normalizerRegex.push(
+	    (/\s[^=\W\s>]+(?=[\s>])(?=[^<>]*>)/g), '', // removes non attribute strings
+	    (/\s+(\\?>)/g), '$1' // remove spaces inside tags
+	);
 	
 	Meio.Template = new Class({
 		
@@ -70,23 +105,8 @@ if(typeof Meio == 'undefined') var Meio = {};
 		options: {
 			debug: false,
 			ignore: {},
-			templateRegex: /\{([^{}]+)\}/g
+			templateRegex: (/\{([^{}]+)\}/g)
 		},
-		
-		normalizeRegex: [
-			(/>\s+</g), '><', // remove spaces between tags
-			(/(<\/?)(\w+)([>\s\/])/g), function(all, b1, match, b2){return b1 + match.toLowerCase() + b2;}, // lowercases tags
-			// removes empty attributes
-			(/\s[\w-]+=["']{2}(?=[^<>]*>)/g), '',
-			// removes non attribute strings
-			(/\s[^=\W\s>]+(?=[\s>])(?=[^<>]*>)/g), '',
-			// adds "" to attrs that dont have
-			// thats a IE behavior with attributes that values dont have spaces
-			// ex: title=something -> title="something"
-			// title="something with space"
-			(/(\s[\w-]+=)([^\s"][^\s>]+[^\s"])(?=[^<>]*>)/g), '$1"$2"',
-			(/\s+(\\?>)/g), '$1' // remove spaces inside tags
-		],
 		
 		initialize: function(template, options){
 			this.setOptions(options);
@@ -113,13 +133,12 @@ if(typeof Meio == 'undefined') var Meio = {};
 			}
 
 			var template = this.template,
-				keys = [],
-				cRegex = this.normalizeRegex;
+				keys = [];
 			
 			// normalizes template and passed html
-			for(var i=0; i < cRegex.length; i+=2){
-				html = html.replace(cRegex[i], cRegex[i+1]);
-				template = template.replace(cRegex[i], cRegex[i+1]);
+			for(var i=0; i < normalizerRegex.length; i+=2){
+				html = html.replace(normalizerRegex[i], normalizerRegex[i+1]);
+				template = template.replace(normalizerRegex[i], normalizerRegex[i+1]);
 			}
 			var replaced = template.replace(this.options.templateRegex, function(total, key){
 				keys.push(key);
@@ -195,7 +214,7 @@ if(typeof Meio == 'undefined') var Meio = {};
 						els[j].style.cssText = '';
 					}
 					else{
-						if (removesProperties && specialProperties[attr]) attr = specialProperties[attr];
+						if (support.removesProperties && specialProperties[attr]) attr = specialProperties[attr];
 						els[j].removeAttribute(attr);
 					}
 				}
