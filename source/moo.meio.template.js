@@ -37,6 +37,8 @@ if(typeof Meio == 'undefined') var Meio = {};
 	var $ = document.id || $;
 
 	var support = {};
+	var attrNameMatchRegex = (/\s[\w-]+(?=[=\s])(?=[^<>]*>)/g);
+	var attrMatchRegex = (/\s[\w="'-]+(?=[\s>\/])(?=[^<>]*>)/g);
     
     (function(){
         var testNode = document.createElement('div');
@@ -55,15 +57,18 @@ if(typeof Meio == 'undefined') var Meio = {};
     	// while other browser quotes the attribute value, ie doenst
         support.innerHtmlReturnsUnquotedAttrs = testNode.innerHTML.contains('title=something');
         
+        testNode.innerHTML = '<input type="text" value="value" name="name" alt="alt">';
+        support.innerHtmlResortsAttrs = (testNode.innerHTML.match(attrNameMatchRegex).toString() != ' type, value, name, alt');
+        
         testNode = null;
     })();
-
+    
     var specialProperties = {
 		'class': 'className',
 		'for': 'htmlFor'
 	};
 	var elementPrototypeWithUID = $extend({'uid': null}, Element.Prototype);
-	
+	var firstTagMatchRegex = (/<\/?([^\W\s>]+)/i);
 	
 	// used on getCorrectInnerHtmlStructure function
     var translations = {
@@ -80,13 +85,12 @@ if(typeof Meio == 'undefined') var Meio = {};
 	// start building the normalizerRegex array
 	var normalizerRegex = [
 		(/>\s+</g), '><', // remove spaces between tags
-		// removes empty attributes
-		(/\s[\w-]+=["']{2}(?=[^<>]*>)/g), ''
+		(/\s[\w-]+=["']{2}(?=[^<>]*>)/g), '' // removes empty attributes
 	];
 	
 	// This regex will lowercase the tags
 	if(support.innerHtmlReturnsUpperCasedTags)
-	    normalizerRegex.push((/(<\/?)(\w+)([>\s\/])/g), function(all, b1, tag, b2){ return b1 + tag.toLowerCase() + b2; });
+	    normalizerRegex.push((/(<\/?)(\w+)(?=[\s\/>])/g), function(all, b1, tag){ return b1 + tag.toLowerCase(); });
 	
     // adds "" to attrs that dont have
 	// ex: title=something -> title="something"
@@ -145,6 +149,10 @@ if(typeof Meio == 'undefined') var Meio = {};
 				return '(.*)';
 			});
 			
+			if(support.innerHtmlResortsAttrs){
+			    html = this.reorderAttributes(template, html);
+			}
+			
 			var match = html.match(new RegExp(replaced));
 			
 			// if theres an error on the match
@@ -155,8 +163,26 @@ if(typeof Meio == 'undefined') var Meio = {};
 			return (match)? match.slice(1).associate(keys): null;
 		},
 		
+		reorderAttributes: function(template, html){
+		    var templateAttrNames = template.match(attrNameMatchRegex);
+		    var htmlAttrNames = html.match(attrNameMatchRegex);
+		    if(templateAttrNames && htmlAttrNames && templateAttrNames.toString() != htmlAttrNames.toString()){
+		        var attrs = []; 
+		        var newHtml = html.replace(attrMatchRegex, function(attr){
+		            attrs.push(attr);
+		            return ' __ATTRIBUTE__';
+		        });
+		        var attrsObj = attrs.associate(htmlAttrNames);
+		        templateAttrNames.each(function(attr){
+		            newHtml = newHtml.replace(' __ATTRIBUTE__', attrsObj[attr]);
+		        });
+		        return newHtml;
+		    }
+		    return html;
+		},
+		
 		getCorrectInnerHtmlStructure: function(html){
-			var match = html.match(/<\/?([^\W\s>]+)/i),
+			var match = html.match(firstTagMatchRegex),
 				firstTag = match[1].toLowerCase(),
 				container = new Element('div', {styles: {'display': 'none'}});
 			
