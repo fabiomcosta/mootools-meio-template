@@ -167,7 +167,7 @@ describe('Template tests13', {
 describe('Template tests14', {
 	'example with option elements': function(){
 		var template = '<option value="{option1-value}">{option1-label}</option><option value="{option2-value}">{option2-label}</option><option value="{option3-value}">{option3-label}</option>';
-		var select = new Element('select').adopt(
+		var select = new Element('select', {multiple: 'multiple'}).adopt(
 			new Element('option', {html: 'label1',value: 'value1'}),
 			new Element('option', {html: 'label2',value: 'value2'}),
 			new Element('option', {html: 'label3',value: 'value3'})
@@ -191,6 +191,18 @@ describe('Template tests15', {
 			'option1-value': 'value1',
 			'option1-label': 'label1',
 			'option1-title': 'title1'
+		});
+	}
+});
+
+describe('Template tests16', {
+	'example with unicode attribute values': function(){
+		var template = '<option selected="selected" value="{option1-value}" title="{option1-title}">{option1-label}</option>';
+		var options = '<option selected="selected" value="value1" title="á ǝpoɔıun  瀡">label1</option>';
+		value_of(template.intersect(options, {debug: true})).should_be({
+			'option1-value': 'value1',
+			'option1-label': 'label1',
+			'option1-title': 'á ǝpoɔıun  瀡'
 		});
 	}
 });

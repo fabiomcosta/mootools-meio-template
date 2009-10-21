@@ -37,8 +37,8 @@ if(typeof Meio == 'undefined') var Meio = {};
 	var $ = document.id || $;
 
 	var support = {};
-	var attrNameMatchRegex = (/\s[\w-]+(?=[=\s])(?=[^<>]*>)/g);
-	var attrMatchRegex = (/\s[\w="'-]+(?=[\s>\/])(?=[^<>]*>)/g);
+	var attrNameMatchRegex = (/\s[^\s=]+(?==)(?=[^<>]*>)/g);
+	var attrMatchRegex = (/\s[^\s=]+=(("(([^"]|\\")*)")|('(([^']|\\')*)'))(?=[^<>]*>)/g);
     
     (function(){
         var testNode = document.createElement('div');
@@ -54,25 +54,33 @@ if(typeof Meio == 'undefined') var Meio = {};
         support.innerHtmlReturnsUpperCasedTags = testNode.innerHTML.contains('<A');
         
     	// thats a IE behavior with attributes that values dont have spaces
-    	// while other browser quotes the attribute value, ie doenst
+    	// while other browser quotes the attribute value, ie doesnt
         support.innerHtmlReturnsUnquotedAttrs = testNode.innerHTML.contains('title=something');
         
         testNode.innerHTML = '<input type="text" value="value" name="name" alt="alt">';
         support.innerHtmlResortsAttrs = (testNode.innerHTML.match(attrNameMatchRegex).toString() != ' type, value, name, alt');
         
+        // some browsers sets boolean attributes as just the attribute. As in 'checked' alone, not 'checked="checked"'
+        testNode.innerHTML = '<input checked="checked" type="checkbox">';
+        support.innerHtmlReturnsBooleanWithoutValue = testNode.innerHTML.test(/\schecked[^=]/i);
+        
+        // some browsers removes boolean attributes by setting them to false
+        testNode.firstChild.checked = false;
+        support.removesBooleanBySettingToFalse = !testNode.innerHTML.test(/\schecked/i);
+        
         testNode = null;
     })();
-    
+
     var specialProperties = {
 		'class': 'className',
 		'for': 'htmlFor'
 	};
 	var elementPrototypeWithUID = $extend({'uid': null}, Element.Prototype);
-	var firstTagMatchRegex = (/<\/?([^\W\s>]+)/i);
+	var firstTagMatchRegex = (/<\/?([^\W\s>]+)/);
 	
 	// used on getCorrectInnerHtmlStructure function
     var translations = {
-		option: [1, '<select>', '</select>'],
+		option: [1, '<select multiple="multiple">', '</select>'],
 		tbody: [1, '<table>', '</table>'],
 		tr: [2, '<table><tbody>', '</tbody></table>'],
 		td: [3, '<table><tbody><tr>', '</tr></tbody></table>']
@@ -85,7 +93,7 @@ if(typeof Meio == 'undefined') var Meio = {};
 	// start building the normalizerRegex array
 	var normalizerRegex = [
 		(/>\s+</g), '><', // remove spaces between tags
-		(/\s[\w-]+=["']{2}(?=[^<>]*>)/g), '' // removes empty attributes
+		(/\s[^"'<>\s=]+=(("")|(''))(?=[^<>]*>)/g), '' // removes empty attributes
 	];
 	
 	// This regex will lowercase the tags
@@ -95,10 +103,13 @@ if(typeof Meio == 'undefined') var Meio = {};
     // adds "" to attrs that dont have
 	// ex: title=something -> title="something"
 	if(support.innerHtmlReturnsUnquotedAttrs)
-	    normalizerRegex.push((/(\s[\w-]+=)([^\s"][^\s>]+[^\s"])(?=[^<>]*>)/g), '$1"$2"');
+	    normalizerRegex.push((/(\s[^"'<>\s=]+=)([^\s"][^\s>]+[^\s"])(?=[^<>]*>)/g), '$1"$2"');
+	
+    // ex: checked -> checked="checked"
+	if(support.innerHtmlReturnsBooleanWithoutValue)
+	    normalizerRegex.push((/\s([^"'<>\s=]+)(?=[\s\/>])((?=[^"]*=")|(?![^"]*"))(?=[^<>]*>)/ig), ' $1="$1"');
 	
 	normalizerRegex.push(
-	    (/\s[^=\W\s>]+(?=[\s>])(?=[^<>]*>)/g), '', // removes non attribute strings
 	    (/\s+(\\?>)/g), '$1' // remove spaces inside tags
 	);
 	
@@ -114,7 +125,7 @@ if(typeof Meio == 'undefined') var Meio = {};
 		
 		initialize: function(template, options){
 			this.setOptions(options);
-			this.template = ($type(template) === 'element')? template.get('html'): template;
+			this.template = ($type(template) == 'element')? template.get('html'): template;
 		},
 		
 		matchWith: function(html){
@@ -122,10 +133,10 @@ if(typeof Meio == 'undefined') var Meio = {};
 			var injectedInDoc = false,
 				container = null;
 			
-			if($type(this.options.ignore) === 'object'){
+			if($type(this.options.ignore) == 'object'){
 				// creating a container so we can use selector engine on the elements
 				// to ignore the ones specified by the ignore option
-				container = ($type(html) === 'element')? $(html): this.getCorrectInnerHtmlStructure(html);
+				container = ($type(html) == 'element')? $(html): this.getCorrectInnerHtmlStructure(html);
 				
 				if(!container.getParent('body')){
 					container.setStyle('display', 'none').inject(document.body);
@@ -144,6 +155,7 @@ if(typeof Meio == 'undefined') var Meio = {};
 				html = html.replace(normalizerRegex[i], normalizerRegex[i+1]);
 				template = template.replace(normalizerRegex[i], normalizerRegex[i+1]);
 			}
+			
 			var replaced = template.replace(this.options.templateRegex, function(total, key){
 				keys.push(key);
 				return '(.*)';
@@ -173,9 +185,9 @@ if(typeof Meio == 'undefined') var Meio = {};
 		            return ' __ATTRIBUTE__';
 		        });
 		        var attrsObj = attrs.associate(htmlAttrNames);
-		        templateAttrNames.each(function(attr){
-		            newHtml = newHtml.replace(' __ATTRIBUTE__', attrsObj[attr]);
-		        });
+		        for(var i=0, len=templateAttrNames.length; i < len; i++){
+		            newHtml = newHtml.replace(' __ATTRIBUTE__', attrsObj[templateAttrNames[i]]);
+		        }
 		        return newHtml;
 		    }
 		    return html;
@@ -201,12 +213,12 @@ if(typeof Meio == 'undefined') var Meio = {};
 		ignoreNodes: function(container){
 			var ignore = this.options.ignore,
 				attrs, els;
-				
+			
 			// tag level
 			for (selector in ignore){
 				// attr level
 				attrs = ignore[selector];
-				if ($type(attrs)=='string'){
+				if ($type(attrs) == 'string'){
 					switch (attrs){
 					case '*':
 						container.getElements(selector).dispose();
@@ -219,7 +231,7 @@ if(typeof Meio == 'undefined') var Meio = {};
 						attrs = [attrs];
 					}
 				}
-				if($type(attrs)=='array'){
+				if($type(attrs) == 'array'){
 					els = container.getElements(selector);
 					this.removeAttributes(els, attrs);
 				}
@@ -240,8 +252,9 @@ if(typeof Meio == 'undefined') var Meio = {};
 						els[j].style.cssText = '';
 					}
 					else{
-						if (support.removesProperties && specialProperties[attr]) attr = specialProperties[attr];
-						els[j].removeAttribute(attr);
+						if(support.removesProperties && specialProperties[attr]) attr = specialProperties[attr];
+						if(support.removesBooleanBySettingToFalse && (typeof els[j][attr] == 'boolean')) els[j][attr] = false;
+						else els[j].removeAttribute(attr);
 					}
 				}
 			}
